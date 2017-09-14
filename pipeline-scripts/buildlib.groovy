@@ -36,6 +36,21 @@ def initialize() {
     echo "Initialized env.GOPATH: ${env.GOPATH}"
 }
 
+def initialize_enterprise_images_dir() {
+    VENV_DIR = "${env.WORKSPACE}/pyenv"
+    ENTERPRISE_IMAGES_DIR = "${env.WORKSPACE}/enterprise-images"
+    OIT_PATH = "${ENTERPRISE_IMAGES_DIR}/oit/oit.python"
+    sh "git clone ${GITHUB_BASE}/enterprise-images.git ${ENTERPRISE_IMAGES_DIR}"
+    env.ENTERPRISE_IMAGES_DIR = ENTERPRISE_IMAGES_DIR
+    env.OIT_PATH = OIT_PATH
+    env.VENV_DIR = VENV_DIR
+    echo "Creating virtualenv..."
+    sh "rm -rf ${VENV_DIR}"
+    sh "virtualenv ${VENV_DIR} --system-site-packages"
+    sh "test -d ${VENV_DIR}"
+    echo "Initialized env.ENTERPRISE_IMAGES_DIR: ${env.ENTERPRISE_IMAGES_DIR}"
+}
+
 def initialize_openshift_dir() {
     OPENSHIFT_DIR = "${GOPATH}/src/github.com/openshift"
     env.OPENSHIFT_DIR = OPENSHIFT_DIR
@@ -47,8 +62,10 @@ def initialize_ose_dir() {
     this.initialize_openshift_dir()
     dir( OPENSHIFT_DIR ) {
         sh "git clone ${GITHUB_BASE}/ose.git"
+        env.GITHUB_URLS["ose"] = "${GITHUB_BASE}/ose.git"
     }
     OSE_DIR = "${OPENSHIFT_DIR}/ose"
+    env.GITHUB_BASE_PATHS["ose"] = OSE_DIR
     env.OSE_DIR = OSE_DIR
     echo "Initialized env.OSE_DIR: ${env.OSE_DIR}"
 }
@@ -57,8 +74,10 @@ def initialize_origin_web_console_dir() {
     this.initialize_openshift_dir()
     dir( OPENSHIFT_DIR ) {
         sh "git clone ${GITHUB_BASE}/origin-web-console.git"
+        env.GITHUB_URLS["origin-web-console"] = "${GITHUB_BASE}/origin-web-console.git"
     }
     WEB_CONSOLE_DIR = "${OPENSHIFT_DIR}/origin-web-console"
+    env.GITHUB_BASE_PATHS["origin-web-console"] = WEB_CONSOLE_DIR
     env.WEB_CONSOLE_DIR = WEB_CONSOLE_DIR
     echo "Initialized env.WEB_CONSOLE_DIR: ${env.WEB_CONSOLE_DIR}"
 }
@@ -67,10 +86,24 @@ def initialize_openshift_ansible() {
     this.initialize_openshift_dir()
     dir( OPENSHIFT_DIR ) {
         sh "git clone ${GITHUB_BASE}/openshift-ansible.git"
+        env.GITHUB_URLS["openshift-ansible"] = "${GITHUB_BASE}/openshift-ansible.git"
     }
     OPENSHIFT_ANSIBLE_DIR = "${OPENSHIFT_DIR}/openshift-ansible"
+    env.GITHUB_BASE_PATHS["openshift-ansible"] = OPENSHIFT_ANSIBLE_DIR
     env.OPENSHIFT_ANSIBLE_DIR = OPENSHIFT_ANSIBLE_DIR
     echo "Initialized env.OPENSHIFT_ANSIBLE_DIR: ${env.OPENSHIFT_ANSIBLE_DIR}"
+}
+
+def initialize_openshift_jenkins() {
+    this.initialize_openshift_dir()
+    dir( OPENSHIFT_DIR ) {
+        sh "git clone ${GITHUB_BASE}/jenkins.git"
+        env.GITHUB_URLS["jenkins"] = "${GITHUB_BASE}/jenkins.git"
+    }
+    OPENSHIFT_JENKINS_DIR = "${OPENSHIFT_DIR}/jenkins"
+    env.GITHUB_BASE_PATHS["jenkins"] = OPENSHIFT_JENKINS_DIR
+    env.OPENSHIFT_JENKINS_DIR = OPENSHIFT_JENKINS_DIR
+    echo "Initialized env.OPENSHIFT_JENKINS_DIR: ${env.OPENSHIFT_JENKINS_DIR}"
 }
 
 /**
@@ -283,6 +316,55 @@ def build_puddle(conf_url, keys, Object...args) {
     def puddle_dir = this.extract_puddle_name( puddle_output )
     echo "Detected puddle directory: ${puddle_dir}"
     return puddle_dir
+}
+
+def parse_record_log( working_dir ) {
+    def record = readFile( "${working_dir}/record.log" )
+    lines = record.split("\\r?\\n");
+
+    def result = [:]
+    int i = 0
+    int f = 0
+    for ( i = 0; i < lines.length; i++ ) {
+        fields = lines[i].split("|")
+        type = fields[0]
+        if(! result.containsKey(type)) {
+            result[type] = []
+        }
+        record = [:]
+        for ( f = 1; f = fields.length; f++ ){
+            entry = fields[f].split("=")
+            if ( entry.length == 1 ){
+                record[entry[0]] = null
+            }
+            else {
+                record[entry[0]] = entry[1]
+            }
+        }
+        result[type].add(record)
+    }
+
+    return result
+}
+
+def get_distgit_notify( record_log ) {
+    def result = [:]
+    if ( ! record_log.containsKey("distgit_commit") || ! record_log.containsKey("dockerfile_notify")) {
+        return result
+    }
+
+    commit = record_log["distgit_commit"]
+    notify = record_log["dockerfile_notify"]
+
+    int i = 0
+    for ( i = 0; i < notify.length; i++ ) {
+        result[notify[i]["distgit"]] = notify[i]
+    }
+    for ( i = 0; i < commit.length; i++ ) {
+        result[commit[i]["distgit"]]["sha"] = commit[i]["sha"]
+    }
+
+    return result
 }
 
 return this
