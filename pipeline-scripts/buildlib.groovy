@@ -79,7 +79,8 @@ def initialize_enterprise_images_dir() {
     sh "rm -rf ${ENTERPRISE_IMAGES_DIR}"  // Remove any cruft
     sh "mkdir -p ${ENTERPRISE_IMAGES_DIR}"
     OIT_PATH = "${ENTERPRISE_IMAGES_DIR}/tools/bin/oit"
-    sh "git clone ${GITHUB_BASE}/enterprise-images.git ${ENTERPRISE_IMAGES_DIR}"
+    sh "git clone --single-branch -b ${OIT_BRANCH} git@github.com:adammhaile/enterprise-images.git ${ENTERPRISE_IMAGES_DIR}"
+
     env.ENTERPRISE_IMAGES_DIR = ENTERPRISE_IMAGES_DIR
     env.OIT_PATH = OIT_PATH
     echo "Initialized env.ENTERPRISE_IMAGES_DIR: ${env.ENTERPRISE_IMAGES_DIR}"
@@ -505,7 +506,7 @@ def new_version(mode, version_string, release_string) {
     ]
 }
 
-/** 
+/**
  * set the repo and branch information for each mode and build version
  * NOTE: here "origin" refers to the git reference, not to OpenShift Origin
  *
@@ -585,20 +586,20 @@ def initialize_ose() {
 
         // Perform some sanity checks
 
-        if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/origin.git release-${spec.major_minor}" ).trim() != "" ) {
-            error( "origin has a release branch for ${spec.major_minor}; ose should have a similar enterprise branch and ose#master's spec Version minor should be bumped" )
-        }
+        // if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/origin.git release-${spec.major_minor}" ).trim() != "" ) {
+        //     error( "origin has a release branch for ${spec.major_minor}; ose should have a similar enterprise branch and ose#master's spec Version minor should be bumped" )
+        // }
 
-        if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/openshift-ansible.git release-${spec.major_minor}" ).trim() != "" ) {
-            error( "openshift-ansible has a release branch for ${spec.major_minor}; ose should have a similar enterprise branch and ose#master's spec Version minor should be bumped" )
-        }
+        // if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/openshift-ansible.git release-${spec.major_minor}" ).trim() != "" ) {
+        //     error( "openshift-ansible has a release branch for ${spec.major_minor}; ose should have a similar enterprise branch and ose#master's spec Version minor should be bumped" )
+        // }
 
         // origin-web-console does not work like the other repos. It always has a enterprise branch for any release in origin#master.
         // origin-web-console#master contains changes for the latest origin-web-console#enterprise-X.Y which need to be be merged into
         // it when building X.Y.
-        if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/origin-web-console.git enterprise-${spec.major_minor}" ).trim() == "" ) {
-            error( "origin-web-console does not yet have an enterprise branch for ${spec.major_minor}; one should be created" )
-        }
+        // if ( sh( returnStdout: true, script: "git ls-remote --heads ${GITHUB_BASE}/origin-web-console.git enterprise-${spec.major_minor}" ).trim() == "" ) {
+        //     error( "origin-web-console does not yet have an enterprise branch for ${spec.major_minor}; one should be created" )
+        // }
 
         env.OSE_MASTER_MAJOR_MINOR = OSE_MASTER_MAJOR_MINOR = spec.major_minor
         env.OSE_MASTER_MAJOR = OSE_MASTER_MAJOR = spec.major
