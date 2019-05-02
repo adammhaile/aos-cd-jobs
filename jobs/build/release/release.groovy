@@ -14,7 +14,7 @@ def stageValidation() {
     echo "Verifying payload does not already exist"
     res = commonlib.shell(
         returnAll: true,
-        script: "${oc_cmd} adm release info ${params.NAME}"
+        script: "${oc_cmd} adm release info quay.io/openshift-release-dev/ocp-release:${params.NAME}"
     )
 
     if(res.returnStatus == 0){
