@@ -85,7 +85,7 @@ node {
 
     try {
         sshagent(['aos-cd-test']) {
-            def release_info = ""
+            release_info = ""
             // must be able to access remote registry for verification
             buildlib.registry_quay_dev_login()
             stage("versions") { release.stageVersions() }
