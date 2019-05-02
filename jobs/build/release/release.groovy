@@ -93,7 +93,7 @@ def stageWaitForStable() {
         )
 
         echo res
-        if(res.rc != 0){
+        if(res.returnStatus != 0){
             echo "Error fetching latest stable: ${res.stderr}"
         }
         else {
@@ -125,7 +125,7 @@ def stageGetReleaseInfo(){
             script: cmd
     )
 
-    if (res.rc != 0){
+    if (res.returnStatus != 0){
         error(res.stderr)
     }
 
