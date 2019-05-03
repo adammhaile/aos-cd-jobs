@@ -102,7 +102,7 @@ node {
         }
 
         dry_subject = ""
-        if (DRY_RUN) { dry_subject = "[DRY RUN]"}
+        if (DRY_RUN) { dry_subject = "[DRY RUN] "}
 
         commonlib.email(
             to: "${params.MAIL_LIST_SUCCESS}",
