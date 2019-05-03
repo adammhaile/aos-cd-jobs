@@ -136,7 +136,7 @@ def stageClientSync() {
         echo "Would have run oc_sync job"
         return
     }
-
+    return
     build(
         job: 'build%2Foc_sync',
         parameters: [
