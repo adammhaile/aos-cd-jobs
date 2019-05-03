@@ -92,7 +92,6 @@ def stageWaitForStable() {
             script: cmd
         )
 
-        echo res
         if(res.returnStatus != 0){
             echo "Error fetching latest stable: ${res.stderr}"
         }
