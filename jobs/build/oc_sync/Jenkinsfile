@@ -3,12 +3,12 @@
 node {
     checkout scm
     echo "${env.REQUESTS_CA_BUNDLE}"
-    echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
+    sh 'echo START ${REQUESTS_CA_BUNDLE}'
     def buildlib = load("pipeline-scripts/buildlib.groovy")
     def commonlib = buildlib.commonlib
 
     echo "${env.REQUESTS_CA_BUNDLE}"
-    echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
+    sh 'echo START ${REQUESTS_CA_BUNDLE}'
 
     // Expose properties for a parameterized build
     properties(
@@ -52,7 +52,7 @@ node {
             stage("sync ocp clients") {
 
                 echo "${env.REQUESTS_CA_BUNDLE}"
-                echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
+                sh 'echo START ${REQUESTS_CA_BUNDLE}'
 		// // must be able to access remote registry to extract image contents
 		// buildlib.registry_quay_dev_login()
         //         sh "./publish-clients-from-payload.sh ${env.WORKSPACE} ${STREAM}"
