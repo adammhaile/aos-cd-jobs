@@ -48,6 +48,9 @@ node {
 
 
     try {
+        environment {
+            REQUESTS_CA_BUNDLE="/etc/pki/tls/certs/ca-bundle.crt"
+        }
         sshagent(['aos-cd-test']) {
             stage("sync ocp clients") {
 
