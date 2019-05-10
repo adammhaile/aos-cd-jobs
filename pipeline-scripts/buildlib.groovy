@@ -1145,4 +1145,7 @@ def determineBuildVersion(stream, branch, versionParam) {
     return version
 }
 
+sh 'export REQUESTS_CA_BUNDLE=${REQUESTS_CA_BUNDLE:="/etc/pki/tls/certs/ca-bundle.crt"}'
+
+
 return this

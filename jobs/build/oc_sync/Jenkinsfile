@@ -2,8 +2,13 @@
 
 node {
     checkout scm
+    echo "${env.REQUESTS_CA_BUNDLE}"
+    echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
     def buildlib = load("pipeline-scripts/buildlib.groovy")
     def commonlib = buildlib.commonlib
+
+    echo "${env.REQUESTS_CA_BUNDLE}"
+    echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
 
     // Expose properties for a parameterized build
     properties(
@@ -45,20 +50,23 @@ node {
     try {
         sshagent(['aos-cd-test']) {
             stage("sync ocp clients") {
-		// must be able to access remote registry to extract image contents
-		buildlib.registry_quay_dev_login()
-                sh "./publish-clients-from-payload.sh ${env.WORKSPACE} ${STREAM}"
+
+                echo "${env.REQUESTS_CA_BUNDLE}"
+                echo sh 'echo START ${REQUESTS_CA_BUNDLE}'
+		// // must be able to access remote registry to extract image contents
+		// buildlib.registry_quay_dev_login()
+        //         sh "./publish-clients-from-payload.sh ${env.WORKSPACE} ${STREAM}"
             }
         }
     } catch (err) {
-        commonlib.email(
-            to: "${params.MAIL_LIST_FAILURE}",
-            from: "aos-cicd@redhat.com",
-            subject: "Error syncing ocp client from payload",
-            body: "Encountered an error while syncing ocp client from payload: ${err}");
-        currentBuild.description = "Error while syncing ocp client from payload:\n${err}"
-        currentBuild.result = "FAILURE"
-        throw err
+        // commonlib.email(
+        //     to: "${params.MAIL_LIST_FAILURE}",
+        //     from: "aos-cicd@redhat.com",
+        //     subject: "Error syncing ocp client from payload",
+        //     body: "Encountered an error while syncing ocp client from payload: ${err}");
+        // currentBuild.description = "Error while syncing ocp client from payload:\n${err}"
+        // currentBuild.result = "FAILURE"
+        // throw err
     }
     buildlib.cleanWorkdir("${env.WORKSPACE}")
 }
