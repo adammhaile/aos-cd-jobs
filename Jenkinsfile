@@ -1,59 +1,75 @@
-properties(
-  [
-    disableConcurrentBuilds()
-  ]
-)
+#!/usr/bin/env groovy
 
-// https://issues.jenkins-ci.org/browse/JENKINS-33511
-def set_workspace() {
-  if(env.WORKSPACE == null) {
-    env.WORKSPACE = WORKSPACE = pwd()
-  }
-}
+node {
+    checkout scm
+    echo "${env.REQUESTS_CA_BUNDLE}"
+    sh 'echo START ${REQUESTS_CA_BUNDLE}'
+    def buildlib = load("pipeline-scripts/buildlib.groovy")
+    def commonlib = buildlib.commonlib
 
-node('openshift-build-1') {
-  try {
-    timeout(time: 30, unit: 'MINUTES') {
-      deleteDir()
-      set_workspace()
-      dir('aos-cd-jobs') {
-        stage('clone') {
-          checkout scm
-          sh 'git checkout master'
+    echo "${env.REQUESTS_CA_BUNDLE}"
+    sh 'echo START ${REQUESTS_CA_BUNDLE}'
+
+    // Expose properties for a parameterized build
+    properties(
+        [
+            buildDiscarder(
+                logRotator(
+                    artifactDaysToKeepStr: '',
+                    artifactNumToKeepStr: '',
+                    daysToKeepStr: '',
+                    numToKeepStr: '8')),
+            [
+                $class: 'ParametersDefinitionProperty',
+                parameterDefinitions: [
+                    [
+                        name: 'STREAM',
+                        description: 'Build stream to sync client from',
+                        $class: 'hudson.model.StringParameterDefinition',
+                        defaultValue: "4.1.0-0.nightly"
+                    ],
+                    [
+                        name: 'MAIL_LIST_FAILURE',
+                        description: 'Failure Mailing List',
+                        $class: 'hudson.model.StringParameterDefinition',
+                        defaultValue: [
+                            'aos-team-art@redhat.com'
+                        ].join(',')
+                    ],
+                    commonlib.mockParam(),
+                ]
+            ],
+            disableConcurrentBuilds()
+        ]
+    )
+
+    commonlib.checkMock()
+
+
+
+    try {
+        environment {
+            REQUESTS_CA_BUNDLE="/etc/pki/tls/certs/ca-bundle.crt"
         }
-        stage('run') {
-          final url = sh(
-            returnStdout: true,
-            script: 'git config remote.origin.url')
-          if(!(url =~ /^[-\w]+@[-\w]+(\.[-\w]+)*:/)) {
-            error('This job uses ssh keys for auth, please use an ssh url')
-          }
-          def prune = true, key = 'openshift-bot'
-          if(url.trim() != 'git@github.com:openshift/aos-cd-jobs.git') {
-            prune = false
-            key = "${(url =~ /.*:([^\/]+)/)[0][1]}-aos-cd-bot"
-          }
-          sshagent([key]) {
-            sh """\
-virtualenv ../env/
-. ../env/bin/activate
-pip install gitpython
-${prune ? 'python -m aos_cd_jobs.pruner' : 'echo Fork, skipping pruner'}
-python -m aos_cd_jobs.updater
-"""
-          }
+        sshagent(['aos-cd-test']) {
+            stage("sync ocp clients") {
+
+                echo "${env.REQUESTS_CA_BUNDLE}"
+                sh 'echo START ${REQUESTS_CA_BUNDLE}'
+		// // must be able to access remote registry to extract image contents
+		// buildlib.registry_quay_dev_login()
+        //         sh "./publish-clients-from-payload.sh ${env.WORKSPACE} ${STREAM}"
+            }
         }
-      }
+    } catch (err) {
+        // commonlib.email(
+        //     to: "${params.MAIL_LIST_FAILURE}",
+        //     from: "aos-cicd@redhat.com",
+        //     subject: "Error syncing ocp client from payload",
+        //     body: "Encountered an error while syncing ocp client from payload: ${err}");
+        // currentBuild.description = "Error while syncing ocp client from payload:\n${err}"
+        // currentBuild.result = "FAILURE"
+        // throw err
     }
-  } catch(err) {
-    mail(
-      to: 'tbielawa@redhat.com, jupierce@redhat.com',
-      from: "aos-cicd@redhat.com",
-      subject: 'aos-cd-jobs-branches job: error',
-      body: """\
-Encoutered an error while running the aos-cd-jobs-branches job: ${err}\n\n
-Jenkins job: ${env.BUILD_URL}
-""")
-    throw err
-  }
+    buildlib.cleanWorkdir("${env.WORKSPACE}")
 }
