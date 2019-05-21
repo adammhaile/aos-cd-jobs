@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -x
 
 SSH_OPTS="-l jenkins_aos_cd_bot -o StrictHostKeychecking=no use-mirror-upload.ops.rhcloud.com"
 
@@ -15,6 +15,7 @@ VERSION=`jq -r '.tag_name' latest`
 DOWNLOADS=`jq -r '.assets | .[] | .browser_download_url' latest`
 
 #check if already exists
+
 if ssh ${SSH_OPTS} "[ -d /srv/pub/openshift-v4/clients/odo/${VERSION} ]";
 then
     echo "Already have latest version"
@@ -23,21 +24,29 @@ else
     echo "Fetching ODO client ${VERSION}"
 fi
 
-
+echo "Create outdir path"
 OUTDIR=${TMPDIR}/${VERSION}
+echo "Create outdir"
 mkdir "${OUTDIR}"
+echo "enter outdir"
 pushd ${OUTDIR}
+
+echo ${OUTDIR}
+echo $(pwd)
 
 #download all release assests
 for item in ${DOWNLOADS};
 do
+    echo "wget ${item}"
     wget ${item}
 done
 popd
 
+echo "symlink"
 # create latest symlink
 ln -sf ${VERSION} latest
 
+echo "run rsync"
 #sync to use-mirror-upload
 rsync \
     -av --delete-after --progress --no-g --omit-dir-times --chmod=Dug=rwX \
